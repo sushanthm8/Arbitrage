@@ -13,28 +13,7 @@ struct Currency {
     int index = 0;
 };
 
-int main() {
-    //read data file
-    std::ifstream data_file;
-    data_file.open("data/data.txt");
-    int counter = 0;
-    vector<Currency> currencies(161);
-    while(counter < 161){
-        data_file >> currencies[counter].symbol >> currencies[counter].rate;
-        currencies[counter].index = counter;
-        counter++;
-    }
-    data_file.close();
-    //make 2d vector with all currencies exchange rates
-    vector< vector<float> > conversions(161, vector<float>(161));
-    for (int i = 0; i < currencies.size(); i++) {
-        for (int j = 0; j < currencies.size(); j++) {
-            conversions[i][j] = -1*log(currencies[i].rate/currencies[j].rate);
-            // cout << conversions[i][j] << " ";
-        }
-        // cout << endl;
-    }
-
+void Bellman_Ford(const vector< vector<float> > &negative_log_conversions, const vector<Currency> &currencies){
     //perform bellman-ford
     vector<float> distance(161);
     vector<float> previous(161);
@@ -49,8 +28,8 @@ int main() {
     for (int i = 0; i < 161; i++) {
         for (int j = 0; j < 161; j++) {
             for (int k = 0; k < 161; k++) {
-                if(distance[k] > distance[j] + conversions[j][k]) {
-                    distance[k] = distance[j] + conversions[j][k];
+                if(distance[k] > distance[j] + negative_log_conversions[j][k]) {
+                    distance[k] = distance[j] + negative_log_conversions[j][k];
                     previous[k] = j;
                 }
             }
@@ -61,10 +40,10 @@ int main() {
     std::ofstream out_file;
     out_file.open("out.txt");
     out_file << "Arbitrage Opportunity: \n";
-    // vector<vector<int>> opportunities;
+    // vector< vector<int> > opportunities;
     for (int j = 0; j < 161; j++) {
         for (int k = 0; k < 161; k++) {
-            if(distance[k] > distance[j] + conversions[j][k]) {
+            if(distance[k] > distance[j] + negative_log_conversions[j][k]) {
                 //We have a cycle
                 vector<int> cycle;
                 cycle.push_back(j);
@@ -74,6 +53,8 @@ int main() {
                     j = previous[j];
                 }
                 cycle.push_back(previous[j]);
+                reverse(cycle.begin(),cycle.end());
+                // opportunities.push_back(cycle);
                 for (int i = cycle.size()-1; i > -1; i--) {
                     out_file << currencies[cycle[i]].symbol << " ";
                 }
@@ -82,5 +63,30 @@ int main() {
         }
     }
     out_file.close();
+}
+
+int main() {
+    //read data file
+    std::ifstream data_file;
+    data_file.open("data/data.txt");
+    int counter = 0;
+    vector<Currency> currencies(161);
+    while(counter < 161){
+        data_file >> currencies[counter].symbol >> currencies[counter].rate;
+        currencies[counter].index = counter;
+        counter++;
+    }
+    data_file.close();
+    //make 2d vector with all currencies exchange rates
+    vector< vector<float> > conversions(161, vector<float>(161));
+    vector< vector<float> > negative_log_conversions(161, vector<float>(161));
+    for (int i = 0; i < currencies.size(); i++) {
+        for (int j = 0; j < currencies.size(); j++) {
+            negative_log_conversions[i][j] = -1*log(currencies[i].rate/currencies[j].rate);
+            // cout << negative_log_conversions[i][j] << " ";
+        }
+        // cout << endl;
+    }
+    Bellman_Ford(negative_log_conversions,currencies);
     return 0;
 }
