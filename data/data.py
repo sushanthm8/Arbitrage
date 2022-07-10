@@ -6,13 +6,13 @@ response = requests.get(url)
 data = response.json()
 
 
-with open('data.json','w') as outfile:
+with open('data/data.json','w') as outfile:
     json.dump(data,outfile, indent=4)
 
-f=open("data.txt","a")
+f=open("data/data.txt","a")
 for ticker in data["conversion_rates"]:
     f.write(ticker)
-    f.write(":")
+    f.write(" ")
     f.write(str(data["conversion_rates"][ticker]))
     f.write("\n")
 f.close()
